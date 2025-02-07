@@ -1,4 +1,4 @@
-name: Deploy to AWS
+name: Deploy to AWS ECR
 
 on:
   push:
@@ -13,12 +13,19 @@ jobs:
     - name: Checkout código
       uses: actions/checkout@v3
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+    - name: Configurar credenciales de AWS
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        mask-password: 'false'  
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
+    - name: Iniciar sesión en Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+      with:
+        registry-type: private
+        
     - name: Construir y etiquetar la imagen Docker
       run: |
         docker build -t mi-microservicio .
@@ -27,3 +34,4 @@ jobs:
     - name: Subir la imagen a Amazon ECR
       run: |
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/mi-microservicio:latest
+
