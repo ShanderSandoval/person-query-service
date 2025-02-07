@@ -20,12 +20,8 @@ jobs:
     - name: Construir y etiquetar la imagen Docker
       run: |
         docker build -t mi-microservicio .
-        docker tag person-query-service:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/person-query-service:latest
+        docker tag person-query-service:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/crm/person-query-service
 
     - name: Subir la imagen a Amazon ECR
       run: |
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/mi-microservicio:latest
-
-    - name: Desplegar en ECS
-      run: |
-        aws ecs update-service --cluster mi-cluster --service mi-servicio --force-new-deployment
