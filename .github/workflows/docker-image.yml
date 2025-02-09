@@ -13,16 +13,16 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v3
 
-      - name: Configurar SSH
+      - name: Configurar SSH con clave PEM
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 54.83.76.104 >> ~/.ssh/known_hosts
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/despliegues-keys.pem
+          chmod 400 ~/.ssh/despliegues-keys.pem
+          ssh-keyscan -H ec2-54-83-76-104.compute-1.amazonaws.com >> ~/.ssh/known_hosts
 
-      - name: Conectar y desplegar
+      - name: Conectar a EC2 y desplegar
         run: |
-          ssh -i ~/.ssh/id_rsa ubuntu@54.83.76.104 << 'EOF'
+          ssh -i ~/.ssh/despliegues-keys.pem ubuntu@ec2-54-83-76-104.compute-1.amazonaws.com << 'EOF'
             cd /home/ubuntu/app
             git pull origin main
             docker compose up --build -d
