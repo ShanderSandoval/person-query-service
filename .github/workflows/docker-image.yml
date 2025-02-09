@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy to AWS EC2
 
 on:
   push:
@@ -7,23 +7,27 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to EC2
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout del código
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Ejecutar comandos remotos en EC2 usando SSH
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: "."
+          target: "~/my-website"
+
+      - name: Deploy with Docker Compose
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
           script: |
-            echo "🚀 Conectado a EC2"
-            cd /ruta/del/proyecto
-            git pull origin main
-            docker-compose down
-            docker-compose up -d --build
-            echo "✅ Despliegue completado"
+            cd ~/my-website
+            docker-compose up --build -d
