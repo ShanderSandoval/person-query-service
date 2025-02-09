@@ -16,9 +16,9 @@ jobs:
       - name: Configurar SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 54.83.76.104 >> ~/.ssh/known_hosts  # Reemplaza con la IP de EC2
+          ssh-keyscan -H 54.83.76.104 >> ~/.ssh/known_hosts
 
       - name: Conectar y desplegar
         run: |
