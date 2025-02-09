@@ -22,11 +22,14 @@ jobs:
 
           # Conectarse a EC2 y ejecutar comandos
           ssh -o StrictHostKeyChecking=no -i charmander-keys.pem ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} << 'EOF'
-            echo "🚀 Conexión exitosa a EC2"
+          echo "🚀 Conexión exitosa a EC2"
+          EOF
+
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKER_IMAGE_NAME }}:latest .
           docker save -o app.tar ${{ secrets.DOCKER_IMAGE_NAME }}:latest
+
       - name: Check if app.tar exists
         run: |
           if [ ! -f "app.tar" ]; then
@@ -35,10 +38,12 @@ jobs:
           else
             echo "✅ Archivo app.tar encontrado."
           fi
+
       - name: Set permissions for app.tar
         run: |
           sudo chmod 644 app.tar
           ls -lah app.tar  # Verificar permisos
+
       - name: Transfer Docker image to EC2
         uses: appleboy/scp-action@master
         with:
