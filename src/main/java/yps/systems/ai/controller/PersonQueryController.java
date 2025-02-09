@@ -35,5 +35,4 @@ public class PersonQueryController {
         return person.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
-
 }
