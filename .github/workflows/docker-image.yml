@@ -1,121 +1,29 @@
-name: Deploy Docker to EC2
+name: Deploy to AWS EC2
 
 on:
   push:
     branches:
-      - main
+      - main  # Se ejecuta cuando hay cambios en la rama main
 
 jobs:
   deploy:
-    name: Deploy Docker App on EC2
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout código
         uses: actions/checkout@v3
 
-      # 🔹 Verifica que las variables Secret están configuradas correctamente
-      - name: Verificar Secrets en GitHub
-        run: |
-          echo "✅ Verificando secrets..."
-          echo "HOST_DNS: ${{ secrets.HOST_DNS }}"
-          echo "USERNAME: ${{ secrets.USERNAME }}"
-          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
-            echo "❌ ERROR: La clave privada SSH está vacía. Verifica los secrets en GitHub."
-            exit 1
-          fi
-
-      # 🔹 Configura la clave SSH y verifica que se crea correctamente
-      - name: Configurar SSH Key
+      - name: Configurar SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.HOST_DNS }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H 54.83.76.104 >> ~/.ssh/known_hosts  # Reemplaza con la IP de EC2
 
-      # 🔹 Verifica que la clave SSH está correctamente configurada
-      - name: Verificar archivo de clave privada
+      - name: Conectar y desplegar
         run: |
-          ls -lah ~/.ssh/id_rsa
-          cat ~/.ssh/id_rsa | head -n 5  # Mostrar solo las primeras líneas para verificar
-
-      # 🔹 Prueba la conexión SSH antes del despliegue
-      - name: Probar conexión SSH a EC2
-        run: |
-          ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }} "echo '✅ Conexión SSH exitosa'"
-
-      # 🔹 Construcción de la imagen Docker en GitHub Actions
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ secrets.DOCKER_IMAGE_NAME }}:latest .
-          docker save -o app.tar ${{ secrets.DOCKER_IMAGE_NAME }}:latest
-
-      # 🔹 Verifica que la imagen Docker fue creada correctamente
-      - name: Check if app.tar exists
-        run: |
-          if [ ! -f "app.tar" ]; then
-            echo "❌ ERROR: El archivo app.tar no existe."
-            exit 1
-          else
-            echo "✅ Archivo app.tar encontrado."
-          fi
-
-      # 🔹 Ajusta los permisos del archivo Docker antes de enviarlo
-      - name: Set permissions for app.tar
-        run: |
-          sudo chmod 644 app.tar
-          ls -lah app.tar  # Verificar permisos
-
-      # 🔹 Transferencia del Docker image a EC2
-      - name: Transfer Docker image to EC2
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.HOST_DNS }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "app.tar"
-          target: "${{ secrets.TARGET_DIR }}"
-          rm: true  # Elimina archivos previos antes de copiar
-
-      # 🔹 Despliegue en EC2 y ejecución del contenedor
-      - name: Run Docker container on EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST_DNS }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            echo "📌 Verificando e instalando Docker en EC2..."
-            
-            # Asegurar que Docker está instalado
-            sudo apt-get update -y
-            sudo apt-get install -y docker.io || true
-            
-            echo "📌 Otorgando permisos al directorio destino..."
-            sudo chmod -R 777 ${{ secrets.TARGET_DIR }}
-
-            echo "📌 Cargando la imagen Docker..."
-            sudo docker load -i ${{ secrets.TARGET_DIR }}/app.tar
-
-            echo "📌 Verificando si el contenedor ya existe..."
-            if sudo docker ps -a --format '{{.Names}}' | grep -q "^${{ secrets.DOCKER_IMAGE_NAME }}$"; then
-              echo "📌 Deteniendo y eliminando el contenedor existente..."
-              sudo docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
-              sudo docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
-            else
-              echo "📌 No hay contenedor antiguo. Continuando con el despliegue..."
-            fi
-
-            echo "📌 Iniciando el nuevo contenedor con variables de entorno..."
-            sudo docker run -d \
-              --name ${{ secrets.DOCKER_IMAGE_NAME }} \
-              -p 80:10012 \
-              -e SPRING_NEO4J_URI="${{ secrets.SPRING_NEO4J_URI }}" \
-              -e SPRING_NEO4J_AUTHENTICATION_USERNAME="${{ secrets.SPRING_NEO4J_AUTHENTICATION_USERNAME }}" \
-              -e SPRING_NEO4J_AUTHENTICATION_PASSWORD="${{ secrets.SPRING_NEO4J_AUTHENTICATION_PASSWORD }}" \
-              ${{ secrets.DOCKER_IMAGE_NAME }}:latest
-
-            echo "📌 Verificando variables dentro del contenedor..."
-            sudo docker exec ${{ secrets.DOCKER_IMAGE_NAME }} printenv | grep SPRING_NEO4J
-
-            echo "✅ Despliegue completado con Docker 🚀"
+          ssh -i ~/.ssh/id_rsa ubuntu@54.83.76.104 << 'EOF'
+            cd /home/ubuntu/app
+            git pull origin main
+            docker compose up --build -d
+          EOF
