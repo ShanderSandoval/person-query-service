@@ -3,27 +3,31 @@ name: Deploy to AWS EC2
 on:
   push:
     branches:
-      - main  # Se ejecuta cuando hay cambios en la rama main
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout código
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Configurar SSH con clave PEM
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/despliegues-keys.pem
-          chmod 600 ~/.ssh/despliegues-keys.pem
-          ssh-keyscan -H ec2-54-83-76-104.compute-1.amazonaws.com >> ~/.ssh/known_hosts
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: "."
+          target: "~/my-website"
 
-      - name: Conectar a EC2 y desplegar
-        run: |
-          ssh -i ~/.ssh/despliegues-keys.pem ubuntu@ec2-54-83-76-104.compute-1.amazonaws.com << 'EOF'
-            cd /home/ubuntu/app
-            git pull origin main
-            docker compose up --build -d
-          EOF
+      - name: Deploy with Docker Compose
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd ~/my-website
+            docker-compose up --build -d
