@@ -17,7 +17,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/despliegues-keys.pem
-          chmod 400 ~/.ssh/despliegues-keys.pem
+          chmod 600 ~/.ssh/despliegues-keys.pem
           ssh-keyscan -H ec2-54-83-76-104.compute-1.amazonaws.com >> ~/.ssh/known_hosts
 
       - name: Conectar a EC2 y desplegar
