@@ -93,5 +93,3 @@ jobs:
               -e SPRING_NEO4J_AUTHENTICATION_PASSWORD=${{ secrets.SPRING_NEO4J_AUTHENTICATION_PASSWORD }} \
               ${{ secrets.DOCKER_IMAGE_NAME }}:latest
             echo "✅ Despliegue completado con Docker 🚀"
-            echo "📌 Mostrando logs del contenedor..."
-            sudo docker logs -f ${{ secrets.DOCKER_IMAGE_NAME }}
