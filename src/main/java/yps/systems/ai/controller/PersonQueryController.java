@@ -34,5 +34,10 @@ public class PersonQueryController {
         Optional<Person> person = personRepository.findById(id);
         return person.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+
     }
+
+
+
+
 }
