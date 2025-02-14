@@ -21,14 +21,13 @@ public class PersonEventListenerService {
     public PersonEventListenerService(IPersonDocumentRepository personRepository) {
         this.personRepository = personRepository;
     }
-
     @KafkaListener(topics = "${env.kafka.topicEvent}")
     public void listen(@Payload String payload, @Header("eventType") String eventType, @Header("source") String source) {
+        System.out.println("Processing " + eventType + " event from " + source);
         switch (eventType) {
             case "CREATE_PERSON":
                 try {
                     Person person = new ObjectMapper().readValue(payload, Person.class);
-                    System.out.println("Processing " + eventType + " event from " + source);
                     personRepository.save(person);
                 } catch (JsonProcessingException e) {
                     System.err.println("Error parsing Person JSON: " + e.getMessage());
@@ -37,25 +36,20 @@ public class PersonEventListenerService {
             case "UPDATE_PERSON":
                 try {
                     Person person = new ObjectMapper().readValue(payload, Person.class);
-                    System.out.println("Processing " + eventType + " event from " + source);
-                    System.out.println("Processing UPDATE_PERSON event from " + source);
                     Optional<Person> personOptional = personRepository.findById(person.getId());
-                    personOptional.ifPresent(existingPerson -> {
-                        existingPerson.setId(person.getId());
-                        personRepository.save(existingPerson);
-                    });
+                    personOptional.ifPresent(existingPerson -> personRepository.save(person));
                 } catch (JsonProcessingException e) {
                     System.err.println("Error parsing Person JSON: " + e.getMessage());
                 }
                 break;
             case "DELETE_PERSON":
-                System.out.println("Processing DELETE_PERSON event from " + source);
-                Optional<Person> personOptional = personRepository.findById(payload);
+                Optional<Person> personOptional = personRepository.findById(payload.replaceAll("\"", ""));
                 personOptional.ifPresent(value -> personRepository.deleteById(value.getId()));
                 break;
             default:
                 System.out.println("Unknown event type: " + eventType);
         }
     }
+
 
 }
