@@ -12,6 +12,7 @@ import yps.systems.ai.repository.IPersonDocumentRepository;
 import java.util.List;
 import java.util.Optional;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/query/personService")
 public class PersonQueryController {
