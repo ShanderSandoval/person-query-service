@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import yps.systems.ai.model.Person;
 import yps.systems.ai.repository.IPersonDocumentRepository;
+import org.springframework.web.bind.annotation.CrossOrigin;
+
 
 import java.util.List;
 import java.util.Optional;
